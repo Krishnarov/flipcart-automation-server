@@ -1,0 +1,18 @@
+2026/01/26-19:33:54.416 5914f Reusing MANIFEST /Users/krishnakumar/Downloads/Developer/flipkart-automation/server/gmail-session/Default/IndexedDB/https_mail.google.com_0.indexeddb.leveldb/MANIFEST-000001
+2026/01/26-19:33:54.416 5914f Recovering log #15
+2026/01/26-19:33:54.434 5914f Reusing old log /Users/krishnakumar/Downloads/Developer/flipkart-automation/server/gmail-session/Default/IndexedDB/https_mail.google.com_0.indexeddb.leveldb/000015.log 
+2026/01/26-19:33:59.157 5914f Compacting 1@1 + 1@2 files
+2026/01/26-19:33:59.610 5914f Generated table #18@1: 184 keys, 774345 bytes
+2026/01/26-19:33:59.611 5914f Compacted 1@1 + 1@2 files => 774345 bytes
+2026/01/26-19:33:59.710 5914f compacted to: files[ 0 0 1 0 0 0 0 ]
+2026/01/26-19:33:59.711 5914f Delete type=2 #14
+2026/01/26-19:33:59.711 5914f Delete type=2 #16
+2026/01/26-19:34:15.660 59151 Level-0 table #20: started
+2026/01/26-19:34:15.842 59151 Level-0 table #20: 3076710 bytes OK
+2026/01/26-19:34:15.899 59151 Delete type=0 #15
+2026/01/26-19:34:39.804 59151 Level-0 table #22: started
+2026/01/26-19:34:40.184 59151 Level-0 table #22: 3198631 bytes OK
+2026/01/26-19:34:40.453 59151 Delete type=0 #19
+2026/01/26-19:34:58.702 59151 Level-0 table #24: started
+2026/01/26-19:34:58.873 59151 Level-0 table #24: 3250831 bytes OK
+2026/01/26-19:34:58.925 59151 Delete type=0 #21
