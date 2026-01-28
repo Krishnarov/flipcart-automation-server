@@ -6,17 +6,28 @@ import { delay } from './utils.js';
  * @param {string} username
  * @param {string} password
  */
+
+export const openFlipkartPage = async (page) => {
+    await page.goto('https://www.flipkart.com/account/login', { waitUntil: 'networkidle' });
+    const loginButton = page.getByRole("link", { name: /login/i });
+    const isLoginBtnVisible = await loginButton.count() > 0 &&
+        await loginButton.first().isVisible();
+    if (isLoginBtnVisible) {
+        console.log("🔐 User NOT logged in");
+        return false; // ❌ not logged in
+    }
+    console.log("✅ User already logged in");
+    return true; // ✅ logged in
+
+}
+
 export const loginToFlipkart = async (page, username) => {
     try {
-        await page.goto('https://www.flipkart.com/account/login', { waitUntil: 'networkidle' });
-
+        await page.waitForSelector("input.c3Bd2c.yXUQVt", { timeout: 3000 });
         await page.fill("input.c3Bd2c.yXUQVt", username);
         await delay(1000);
         await page.getByRole("button", { name: /Request OTP/i }).click();
         // await page.waitForNavigation({ waitUntil: 'networkidle' });
-
-
-
 
     } catch (error) {
         console.error('Login Error:', error.message);

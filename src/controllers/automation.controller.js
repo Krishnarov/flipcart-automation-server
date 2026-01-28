@@ -1,11 +1,11 @@
 import AutomationJob from '../models/AutomationJob.js';
 import { runAutomation } from '../services/playwright.service.js';
 import PurchaseTask from '../models/PurchaseTask.js';
+import CancelTask from '../models/CancelTask.js';
 
 export const startJob = async (req, res) => {
     try {
         const { jobId } = req.params;
-        console.log("🚀 startJob API hit");
         const job = await AutomationJob.findById(jobId);
         if (!job) {
             return res.status(404).json({ message: 'Job not found' });
@@ -17,7 +17,14 @@ export const startJob = async (req, res) => {
         if (job.status === 'completed') {
             return res.status(400).json({ message: 'Job is already completed' });
         }
-        const tasks = await PurchaseTask.find({ jobId });
+
+        let tasks;
+        if (job.type === 'cancel') {
+            tasks = await CancelTask.find({ jobId });
+        } else {
+            tasks = await PurchaseTask.find({ jobId });
+        }
+
         if (tasks.length === 0) {
             return res.status(404).json({ message: 'No tasks found for this job' });
         }

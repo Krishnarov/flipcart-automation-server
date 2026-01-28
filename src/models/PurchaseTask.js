@@ -13,7 +13,7 @@ const purchaseTaskSchema = new mongoose.Schema({
     password: {
         type: String,
     },
-    productLink: {
+    productlink: {
         type: String,
         required: true,
     },
@@ -26,22 +26,25 @@ const purchaseTaskSchema = new mongoose.Schema({
     pincode: {
         type: String,
     },
+    addressline2: {
+        type: String,
+    },
+    addressline1: {
+        type: String,
+    },
     city: {
-        type: String,
-    },
-    address: {
-        type: String,
-    },
-    district: {
         type: String,
     },
     state: {
         type: String,
     },
+    district: {
+        type: String,
+    },
     landmark: {
         type: String,
     },
-    altPhone: {
+    alternatephone: {
         type: String,
     },
     status: {

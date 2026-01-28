@@ -10,6 +10,11 @@ const automationJobSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    type: {
+        type: String,
+        enum: ['purchase', 'cancel'],
+        default: 'purchase',
+    },
     status: {
         type: String,
         enum: ['pending', 'running', 'completed', 'failed'],
