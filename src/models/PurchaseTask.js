@@ -38,13 +38,16 @@ const purchaseTaskSchema = new mongoose.Schema({
     state: {
         type: String,
     },
-    district: {
-        type: String,
-    },
     landmark: {
         type: String,
     },
     alternatephone: {
+        type: String,
+    },
+    accountid: {
+        type: String,
+    },
+    orderId: {
         type: String,
     },
     status: {

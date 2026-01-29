@@ -75,11 +75,13 @@ const openAddressFormSafely = async (page) => {
     throw new Error("Address form could not be opened");
 };
 
-export const executePurchase = async (page, task) => {
+export const executePurchase = async (page, task, updateStatus = async () => { }) => {
     try {
-        await page.goto(task.productlink, { waitUntil: 'networkidle' });
+        await updateStatus('Navigating to product page');
+        await page.goto(`https://www.flipkart.com/product/p/itme?pid=${task.productlink}`, { waitUntil: 'networkidle' });
 
         // 1️⃣ Sold Out check
+        await updateStatus('Checking stock availability');
         const soldOut = page.getByText(/sold out/i);
         if ((await soldOut.count()) > 0 && await soldOut.first().isVisible()) {
             console.log("❌ Product is Sold Out");
@@ -93,9 +95,12 @@ export const executePurchase = async (page, task) => {
             return { success: false, reason: "Out of Stock" };
         }
 
+        await updateStatus('Clicking Buy Now');
         await page.getByRole("button", { name: /buy now/i }).click();
         await page.waitForLoadState("networkidle");
+
         // 🔍 Detect Flipkart error
+        await updateStatus('Checking for purchase errors');
         const purchaseError = await detectPurchaseError(page);
         if (purchaseError) {
             console.log("❌ Purchase blocked by Flipkart:", purchaseError);
@@ -104,9 +109,11 @@ export const executePurchase = async (page, task) => {
                 reason: purchaseError,
             };
         }
+
+        await updateStatus('Opening address form');
         await openAddressFormSafely(page);
 
-
+        await updateStatus('Filling address details');
         await page.locator('input[name="name"]').fill(task.name);
         await page.locator('input[name="phone"]').fill(task.phone);
         await page.locator('input[name="pincode"]').fill(task.pincode);
@@ -122,76 +129,98 @@ export const executePurchase = async (page, task) => {
             .fill(task.alternatephone);
         await page.getByText("Home (All day delivery)").click();
 
-        await page.waitForTimeout(3000);
+        await page.waitForTimeout(1000);
+        await updateStatus('Saving address');
         await page
             .getByRole("button", { name: /Save and Deliver Here/i })
             .click();
+        await page.waitForLoadState("networkidle");
 
-        await page.waitForTimeout(3000);
+        await updateStatus('Continuing to payment');
         await page.getByRole("button", { name: /CONTINUE/i }).click();
-        await page.waitForTimeout(3000);
+        await page.waitForLoadState("networkidle");
+
         // 🔄 Accept terms (if shown)
         const acceptBtn = page.getByRole("button", { name: /accept & continue/i });
         if (await acceptBtn.count() > 0 && await acceptBtn.first().isVisible()) {
+            await updateStatus('Accepting terms');
             await acceptBtn.first().click();
+            await page.waitForLoadState("networkidle");
         }
-        await page.waitForTimeout(3000);
+
         // 💰 COD CHECK STARTS HERE
+        await updateStatus('Checking COD availability');
         const codOption = await page.getByText(/Cash on Delivery/i);
         // ❌ Case 1: COD option hi nahi
         if (await codOption.count() === 0) {
             console.log("❌ COD option not found");
-
-            return {
-                success: false,
-                reason: "COD Not Available",
-            };
+            return { success: false, reason: "COD Not Available" };
         }
         // ❌ Case 2: COD option disabled
         if (!(await codOption.first().isEnabled())) {
             console.log("❌ COD option disabled");
-
-            return {
-                success: false,
-                reason: "COD Not Available",
-            };
+            return { success: false, reason: "COD Not Available" };
         }
         // ❌ Case 3: COD not available message
         const codBlockedMsg = page.getByText(/cod.*not available|cash on delivery.*not available/i);
         if (await codBlockedMsg.count() > 0) {
             console.log("❌ COD not available message");
-
-            return {
-                success: false,
-                reason: "COD Not Available",
-            };
+            return { success: false, reason: "COD Not Available" };
         }
+
         // ✅ COD available → select it
+        await updateStatus('Selecting COD');
         await codOption.first().click();
+
         // 🛒 PLACE ORDER
+        await updateStatus('Placing order');
         const placeOrderBtn = page.getByRole("button", { name: /place order/i });
         await placeOrderBtn.waitFor({ state: "visible", timeout: 15000 });
         await placeOrderBtn.click();
+        await page.waitForLoadState("networkidle");
+
         const orderConfirm = page.getByRole("button", { name: /Confirm order/i });
         await orderConfirm.waitFor({ state: "visible", timeout: 15000 });
         await orderConfirm.click();
+        await page.waitForLoadState("networkidle");
         console.log("✅ Order placed successfully");
+
         // Optional popup handling
-        const denyBtn = page.getByRole("button", { name: /deny/i });
+        const denyBtn = page.getByRole("button", { name: /Deny/i });
         if (await denyBtn.count() > 0 && await denyBtn.first().isVisible()) {
+            await updateStatus('Handling popups');
             await denyBtn.first().click();
         }
-        await page.waitForTimeout(3000);
+
         // 📸 TAKE SCREENSHOT
-        const screenshotPath = `screenshots/${task._id}-order-success}.png`;
+        await updateStatus('Capturing success screenshot');
+        const screenshotPath = `screenshots/${task._id}-order-success.png`;
         await page.screenshot({
             path: screenshotPath,
             fullPage: true,
         });
         console.log("📸 Screenshot saved at:", screenshotPath);
 
+        const TrackOrder = page.getByText(/Track & manage order/i);
+        await TrackOrder.waitFor({ state: "visible", timeout: 10000 });
+        await TrackOrder.click();
+        await page.waitForLoadState("networkidle");
 
-        return { success: true };
+        // 🔍 Order ID text element
+        await updateStatus('Extracting Order ID');
+        const orderIdLocator = page.getByText(/Order #/i).first();
+        await orderIdLocator.waitFor({ state: "visible", timeout: 10000 });
+        // 🧠 Extract text
+        const orderIdText = (await orderIdLocator.innerText()).trim();
+        console.log("✅ Raw Order Text:", orderIdText);
+        // 🎯 Extract only Order ID
+        const match = orderIdText.match(/Order\s*#\s*([A-Z0-9]+)/i);
+        if (!match) {
+            throw new Error("Order ID not found");
+        }
+        const orderId = match[1];
+        console.log("🎉 Order ID Extracted:", orderId);
+        return { success: true, reason: 'Order placed successfully via COD', orderId: orderId };
     } catch (error) {
         console.error('Purchase Error:', error.message);
         return { success: false, reason: error.message };

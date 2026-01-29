@@ -54,14 +54,17 @@ export const getStats = async (req, res) => {
     try {
         const userId = req.user?._id || '65b3a8a3f1a2c3d4e5f6a7b8'; // Placeholder
 
+        const purchaseJobs = await AutomationJob.find({ userId, type: 'purchase' }).distinct('_id');
+        const cancelJobs = await AutomationJob.find({ userId, type: 'cancel' }).distinct('_id');
+
         const purchaseCount = await PurchaseTask.countDocuments({
             status: 'success',
-            jobId: { $in: await AutomationJob.find({ userId, type: 'purchase' }).distinct('_id') }
+            jobId: { $in: purchaseJobs }
         });
 
         const cancelCount = await CancelTask.countDocuments({
             status: 'success',
-            jobId: { $in: await AutomationJob.find({ userId, type: 'cancel' }).distinct('_id') }
+            jobId: { $in: cancelJobs }
         });
 
         res.status(200).json({
@@ -71,5 +74,19 @@ export const getStats = async (req, res) => {
     } catch (error) {
         console.error('Stats Error:', error);
         res.status(500).json({ message: 'Error fetching stats' });
+    }
+};
+
+/**
+ * Downloads a sample excel file based on type.
+ */
+export const downloadSample = async (req, res) => {
+    try {
+        const { type } = req.params;
+        // In a real app, these files would exist in a 'public' or 'assets' folder
+        // For now, we'll send a message or a mock file if possible
+        res.status(200).json({ message: `Sample for ${type} would be downloaded here.` });
+    } catch (error) {
+        res.status(500).json({ message: 'Error downloading sample' });
     }
 };

@@ -1,4 +1,0 @@
-2026/01/28-14:30:05.815 2343c Reusing MANIFEST /Users/krishnakumar/Downloads/Developer/flipkart-automation/server/gmail-session/Default/Session Storage/MANIFEST-000001
-2026/01/28-14:30:05.820 2343c Recovering log #4
-2026/01/28-14:30:05.820 2343c (ignoring error) /Users/krishnakumar/Downloads/Developer/flipkart-automation/server/gmail-session/Default/Session Storage/000004.log: dropping 7901 bytes; Corruption: checksum mismatch
-2026/01/28-14:30:05.823 2343c Reusing old log /Users/krishnakumar/Downloads/Developer/flipkart-automation/server/gmail-session/Default/Session Storage/000004.log 

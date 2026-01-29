@@ -15,11 +15,13 @@ import { delay } from '../playwright/utils.js';
  */
 export const runAutomation = async (jobId) => {
     console.log("🟢 runAutomation started for job:", jobId);
-    const context = await chromium.launchPersistentContext(
-        "./gmail-session",
+    const contextKuku = await chromium.launchPersistentContext(
+        "./kuku-session",
         playwrightConfig
     );
 
+    const browser = await chromium.launch(playwrightConfig);
+    const context = await browser.newContext();
     const flipkartPage = await context.newPage();
     let emailPage;
 
@@ -48,56 +50,85 @@ export const runAutomation = async (jobId) => {
 
         for (const task of tasks) {
             console.log(`Processing task ${task._id} for ${task.email}`);
+            let currentStep = 'Initiating Login';
 
             try {
-                const isLoggedIn = await openFlipkartPage(flipkartPage);
-                console.log("🟢 isLoggedIn:", isLoggedIn);
+                // await TaskModel.findByIdAndUpdate(task._id, { reason: 'Step: Initiating Login' });
+                await loginToFlipkart(flipkartPage, task.email);
 
-                if (!isLoggedIn) {
-                    await loginToFlipkart(flipkartPage, task.email);
-                    await delay(10000);
-                    emailPage = await context.newPage();
-                    console.log("🟢 New page created for OTP");
+                currentStep = 'Waiting for Page Load';
+                // await TaskModel.findByIdAndUpdate(task._id, { reason: 'Step: Waiting for Page Load' });
+                await flipkartPage.waitForLoadState("networkidle");
+                await flipkartPage.waitForTimeout(1000);
 
-                    const otp = await loginToEmail(emailPage);
-                    console.log("🟢 OTP received:", otp);
+                currentStep = 'Accessing OTP Email';
+                // await TaskModel.findByIdAndUpdate(task._id, { reason: 'Step: Accessing OTP Email' });
+                emailPage = await contextKuku.newPage();
+                console.log("🟢 New page created for OTP");
 
-                    await flipkartPage.bringToFront();
-                    await loginToFlipkartWithOTP(flipkartPage, otp);
-                    await flipkartPage.waitForTimeout(5000);
+                const otp = await loginToEmail(emailPage, task.email);
+                console.log("🟢 OTP received:", otp);
 
-                    const stillLogin = await flipkartPage
-                        .getByRole("link", { name: /login/i })
-                        .count();
-                    if (stillLogin > 0) {
-                        throw new Error("Login failed even after OTP");
-                    }
-                    if (emailPage) await emailPage.close();
-                } else {
-                    console.log("➡️ Skipping login, already authenticated");
+                currentStep = 'Submitting OTP';
+                // await TaskModel.findByIdAndUpdate(task._id, { reason: 'Step: Submitting OTP' });
+                await flipkartPage.bringToFront();
+                await loginToFlipkartWithOTP(flipkartPage, otp);
+                await flipkartPage.waitForLoadState("networkidle");
+
+                const stillLogin = await flipkartPage
+                    .getByRole("link", { name: /login/i })
+                    .count();
+                if (stillLogin > 0) {
+                    throw new Error("Login failed even after OTP");
+                }
+                // if (emailPage) await emailPage.close();
+
+
+                currentStep = 'Executing Purchase/Cancellation Flow';
+                // await TaskModel.findByIdAndUpdate(task._id, { reason: 'Step: Executing Purchase/Cancellation Flow' });
+
+                let lastSubStep = '';
+                const updateStatus = async (reason) => {
+                    lastSubStep = reason;
+                    console.log(`Step: ${reason}`);
+                };
+
+                const result = await executeFlow(flipkartPage, task, updateStatus);
+
+                const updateData = {
+                    status: result.success ? 'success' : 'failed',
+                    reason: result.success ? (result.reason || 'Completed successfully') : (result.reason || `Failed at ${currentStep}: ${lastSubStep || 'Unknown error'}`),
+                };
+
+                if (result.success && result.orderId) {
+                    updateData.orderId = result.orderId;
                 }
 
-                const result = await executeFlow(flipkartPage, task);
-
-                await TaskModel.findByIdAndUpdate(task._id, {
-                    status: result.success ? 'success' : 'failed',
-                    reason: result.reason || (result.success ? '' : 'Unknown Error'),
-                });
+                await TaskModel.findByIdAndUpdate(task._id, updateData);
 
             } catch (error) {
-                console.error(`Task ${task._id} failed:`, error.message);
+                console.error(`Task ${task._id} failed at ${currentStep}:`, error.message);
                 await TaskModel.findByIdAndUpdate(task._id, {
                     status: 'failed',
-                    reason: error.message,
+                    reason: `Error at ${currentStep}: ${error.message}`,
                 });
+            } finally {
+                if (emailPage) {
+                    await emailPage.close().catch(() => { });
+                    emailPage = null;
+                }
             }
         }
 
         await AutomationJob.findByIdAndUpdate(jobId, { status: 'completed' });
     } catch (error) {
         console.error(`Automation Job ${jobId} failed:`, error.message);
-        await AutomationJob.findByIdAndUpdate(jobId, { status: 'failed' });
+        await AutomationJob.findByIdAndUpdate(jobId, {
+            status: 'failed',
+            reason: error.message
+        });
     } finally {
         await context.close();
+        if (contextKuku) await contextKuku.close();
     }
 };

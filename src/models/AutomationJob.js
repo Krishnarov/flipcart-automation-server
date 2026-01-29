@@ -20,6 +20,9 @@ const automationJobSchema = new mongoose.Schema({
         enum: ['pending', 'running', 'completed', 'failed'],
         default: 'pending',
     },
+    reason: {
+        type: String,
+    },
 }, { timestamps: true });
 
 const AutomationJob = mongoose.model('AutomationJob', automationJobSchema);

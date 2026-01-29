@@ -1,29 +1,50 @@
 /**
  * Logs into Gmail using provided credentials.
  * @param {import('playwright').Page} page
+ * @param {string} email
  */
-export const loginToEmail = async (page) => {
+export const loginToEmail = async (page, email) => {
     try {
 
         // 1) Inbox open + settle
-        await page.goto("https://mail.google.com/mail/u/0/#inbox");
-        await page.waitForLoadState("domcontentloaded");
-        await page.waitForSelector('[role="row"]', { timeout: 20000 });
-        // const refreshButton = page.locator("div.G-Ni.J-J5-Ji");
-        // await refreshButton.click();
-        // await page.waitForTimeout(2000);
-        // await refreshButton.click();
-        await page.waitForTimeout(2000);
-        const rows = page.getByRole("row", { name: /flipkart/i });
-        await rows.first().waitFor({ timeout: 20000 });
-        await rows.first().click();
-        const subject = page.getByRole("heading", {
-            name: /Flipkart Account /i,
+        await page.goto("https://m.kuku.lu/recv.php", {
+            waitUntil: "domcontentloaded",
         });
-        await subject.waitFor({ timeout: 10000 });
-        const subjectText = await subject.innerText();
-        const otp = subjectText.match(/\b\d{6}\b/)?.[0] ?? null;
-        return otp
+
+        await page.click("#image_reload");
+        await page.waitForTimeout(10000);
+        await page.locator('input[name="q"]').fill(email)
+        await page.waitForTimeout(10000);
+        await page.press('input[name="q"]', 'Enter')
+        await page.waitForLoadState("networkidle")
+        await page.click("#image_reload");
+        await page.waitForTimeout(3000);
+        await page.click("#image_reload");
+        await page.waitForLoadState("networkidle")
+
+        // 2️⃣ Wait for latest mail subject (bold one)
+        const subjectLocator = page
+            .locator('[id^="area_mail_title_"] b span')
+            .first();
+
+        await subjectLocator.waitFor({
+            state: "visible",
+            timeout: 30000,
+        });
+
+        // 3️⃣ Read subject
+        const subjectText = (await subjectLocator.innerText()).trim();
+        console.log("📩 Subject:", subjectText);
+
+        // 4️⃣ Extract OTP (6 digits)
+        const otpMatch = subjectText.match(/\b\d{4,6}\b/);
+        if (!otpMatch) {
+            throw new Error("OTP not found in email subject");
+        }
+
+        const otp = otpMatch[0];
+        console.log("✅ OTP Found:", otp);
+        return otp;
     } catch (error) {
         console.error('Email Login Error:', error.message);
         // Note: Google has strong bot detection. This is a basic flow.

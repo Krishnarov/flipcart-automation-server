@@ -36,6 +36,7 @@ export const parseExcelData = (filePath, type = 'purchase') => {
             // Default: purchase
             return {
                 email: row.email || row.Email,
+                accountid: row.accountid || row.accountId || row.AccountID,
                 productlink: row.productlink || row.productLink || row.ProductLink,
                 name: row.name || row.Name,
                 phone: String(row.phone || row.Phone || ''),
@@ -43,7 +44,6 @@ export const parseExcelData = (filePath, type = 'purchase') => {
                 addressline2: row.addressline2 || row.AddressLine2,
                 addressline1: row.addressline1 || row.AddressLine1,
                 city: row.city || row.City,
-                district: row.district || row.District,
                 state: row.state || row.State,
                 landmark: row.landmark || row.Landmark,
                 alternatephone: String(row.alternatephone || row.AlternatePhone || row.altPhone || ''),

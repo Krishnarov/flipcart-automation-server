@@ -10,12 +10,15 @@ const cancelTaskSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    password: {
-        type: String,
-    },
     orderId: {
         type: String,
         required: true,
+    },
+    reasonvalue: {
+        type: String,
+    },
+    reasontext: {
+        type: String,
     },
     status: {
         type: String,

@@ -1,4 +1,0 @@
-2026/01/28-14:31:17.017 23ad9 Reusing MANIFEST /Users/krishnakumar/Downloads/Developer/flipkart-automation/server/gmail-session/Default/Local Storage/leveldb/MANIFEST-000001
-2026/01/28-14:31:17.034 23ad9 Recovering log #4
-2026/01/28-14:31:17.035 23ad9 (ignoring error) /Users/krishnakumar/Downloads/Developer/flipkart-automation/server/gmail-session/Default/Local Storage/leveldb/000004.log: dropping 9199 bytes; Corruption: checksum mismatch
-2026/01/28-14:31:17.036 23ad9 Reusing old log /Users/krishnakumar/Downloads/Developer/flipkart-automation/server/gmail-session/Default/Local Storage/leveldb/000004.log 

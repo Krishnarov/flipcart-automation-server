@@ -1,4 +1,0 @@
-2026/01/28-14:31:16.808 23a98 Reusing MANIFEST /Users/krishnakumar/Downloads/Developer/flipkart-automation/server/gmail-session/Default/Site Characteristics Database/MANIFEST-000001
-2026/01/28-14:31:16.808 23a98 Recovering log #3
-2026/01/28-14:31:16.809 23a98 (ignoring error) /Users/krishnakumar/Downloads/Developer/flipkart-automation/server/gmail-session/Default/Site Characteristics Database/000003.log: dropping 157 bytes; Corruption: checksum mismatch
-2026/01/28-14:31:16.809 23a98 Reusing old log /Users/krishnakumar/Downloads/Developer/flipkart-automation/server/gmail-session/Default/Site Characteristics Database/000003.log 
