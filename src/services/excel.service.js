@@ -30,6 +30,7 @@ export const parseExcelData = (filePath, type = 'purchase') => {
                     email: row.email || row.Email,
                     password: row.password || row.Password || '',
                     orderId: row.orderid || row.orderId || row.OrderId || row.ORDERID,
+                    seller: row.seller || row.Seller,
                 };
             }
 
@@ -38,6 +39,7 @@ export const parseExcelData = (filePath, type = 'purchase') => {
                 email: row.email || row.Email,
                 accountid: row.accountid || row.accountId || row.AccountID,
                 productlink: row.productlink || row.productLink || row.ProductLink,
+                seller: row.seller || row.Seller,
                 name: row.name || row.Name,
                 phone: String(row.phone || row.Phone || ''),
                 pincode: String(row.pincode || row.Pincode || ''),

@@ -24,61 +24,136 @@ const detectPurchaseError = async (page) => {
     return null;
 };
 
-const openAddressFormSafely = async (page) => {
-    const addressForm = await page.locator('input[name="name"]');
+// const openAddressFormSafely = async (page, name) => {
+//     const addressForm = await page.locator('input[name="name"]');
 
-    // 🔁 Try multiple times because Flipkart UI is async
-    for (let attempt = 1; attempt <= 3; attempt++) {
-        console.log(`🔁 Address resolver attempt ${attempt}`);
+//     // 🔁 Try multiple times because Flipkart UI is async
+//     for (let attempt = 1; attempt <= 3; attempt++) {
+//         console.log(`🔁 Address resolver attempt ${attempt}`);
 
-        // CASE 1: Form already open
-        if (await addressForm.count() > 0 && await addressForm.first().isVisible()) {
-            console.log("🟢 Address form visible");
-            return;
-        }
+//         // CASE 1: Form already open
+//         if (await addressForm.count() > 0 && await addressForm.first().isVisible()) {
+//             console.log("🟢 Address form visible");
+//             await addressForm.fill(name);
+//             return;
+//         }
 
-        // CASE 2: Add new address button visible
-        const addNewBtn = page.getByText(/add a new address/i);
-        if (await addNewBtn.count() > 0 && await addNewBtn.first().isVisible()) {
-            console.log("🟢 Clicking Add New Address");
-            await addNewBtn.first().click();
-            await page.waitForSelector('input[name="name"]', {
-                state: "visible",
-                timeout: 15000
-            })
-            continue;
-        }
+//         // CASE 2: Add new address button visible
+//         const addNewBtn = page.getByText(/add a new address/i);
+//         if (await addNewBtn.count() > 0 && await addNewBtn.first().isVisible()) {
+//             console.log("🟢 Clicking Add New Address");
+//             await addNewBtn.first().click();
+//             await page.waitForSelector('input[name="name"]', {
+//                 state: "visible",
+//                 timeout: 15000
+//             })
+//             await addressForm.fill(name);
+//             continue;
+//         }
 
-        // CASE 3: Existing address selected → Change
-        const deliveryBlock = page.locator('div', {
-            hasText: 'Delivery Address',
-        });
+//         // CASE 3: Existing address selected → Change
+//         const deliveryBlock = page.locator('div', {
+//             hasText: 'Delivery Address',
+//         });
 
-        if (await deliveryBlock.count() > 0) {
-            const changeBtns = deliveryBlock.locator('button', {
-                hasText: 'Change',
-            });
+//         if (await deliveryBlock.count() > 0) {
+//             const changeBtns = deliveryBlock.locator('button', {
+//                 hasText: 'Change',
+//             });
 
-            if (await changeBtns.count() > 0) {
-                console.log("🔁 Clicking Delivery Address → Change");
-                await changeBtns.nth(Math.min(1, (await changeBtns.count()) - 1)).click();
-                await page.waitForLoadState("networkidle");
-                await addNewBtn.first().click();
-                continue;
-            }
-        }
+//             if (await changeBtns.count() > 0) {
+//                 console.log("🔁 Clicking Delivery Address → Change");
+//                 await changeBtns.nth(Math.min(1, (await changeBtns.count()) - 1)).click();
+//                 await page.waitForLoadState("networkidle");
+//                 await addNewBtn.first().click();
+//                 continue;
+//             }
+//         }
 
-        // Wait a bit and retry
-        await page.waitForTimeout(2000);
-    }
+//         // Wait a bit and retry
+//         await page.waitForTimeout(2000);
+//     }
 
-    throw new Error("Address form could not be opened");
-};
+//     throw new Error("Address form could not be opened");
+// };
+
 
 export const executePurchase = async (page, task, updateStatus = async () => { }) => {
     try {
         await updateStatus('Navigating to product page');
         await page.goto(`https://www.flipkart.com/product/p/itme?pid=${task.productlink}`, { waitUntil: 'networkidle' });
+        await page.waitForTimeout(2000);
+
+        if (task.seller) {
+            console.log("🟢 Seller:", task.seller);
+            const FulfilledBy = page.getByText(/Fulfilled by/i);
+            if (await FulfilledBy.count() > 0) {
+                if (await FulfilledBy.first().isVisible()) {
+                    await FulfilledBy.first().click();
+                    await page.waitForTimeout(2000);
+
+                    await page.getByText(/See other sellers/i).click();
+                    await page.waitForTimeout(2000);
+                    // 🎯 1️⃣ Exact seller name div
+                    const sellerName = page.locator(
+                        'div.b1jAQQ',
+                        { hasText: new RegExp(`^${task.seller}$`, 'i') }
+                    ).first();
+
+                    await sellerName.waitFor({ state: "visible", timeout: 5000 });
+
+                    // 🎯 2️⃣ Go to seller CARD (not QGdlvi here, mobile layout)
+                    const sellerCard = sellerName.locator(
+                        'xpath=ancestor::div[contains(@class,"eXlcRr")]'
+                    );
+
+                    // 🎯 3️⃣ Radio button inside this seller card
+                    const radioBtn = sellerCard.locator('input[type="radio"]');
+
+                    await radioBtn.waitFor({ state: "attached", timeout: 5000 });
+
+                    // 🔥 Radio is readonly → click parent div
+                    await radioBtn.evaluate(el => el.click());
+
+                    console.log(`✅ Seller selected: ${task.seller}`);
+
+                    await page.waitForTimeout(1000);
+
+                    // 🎯 4️⃣ Click BACK arrow (top-left)
+                    const backBtn = page.locator('img[src*="svg"]').first();
+                    await backBtn.click();
+
+                    console.log("🔙 Returned to product page with selected seller");
+                }
+
+            }
+
+            const seeOtherSellers = page.getByText(/See other sellers/i)
+            if (await seeOtherSellers.count() > 0) {
+                await seeOtherSellers.click();
+                await page.waitForTimeout(2000);
+                // 🎯 STEP 1: Exact seller name span (no partial match)
+                const sellerNameSpan = page.locator(
+                    '.zCSLD9 span',
+                    { hasText: new RegExp(`^${task.seller}$`, 'i') }
+                ).first();
+
+                await sellerNameSpan.waitFor({ state: "visible", timeout: 5000 });
+
+                // 🎯 STEP 2: Lock to THIS seller row only
+                const sellerRow = sellerNameSpan.locator('xpath=ancestor::div[contains(@class,"QGdlvi")]');
+
+                // 🟠 STEP 3: Buy Now ONLY inside this row
+                const buyNowBtn = sellerRow.locator('button', { hasText: /buy now/i });
+
+                await buyNowBtn.waitFor({ state: "visible", timeout: 5000 });
+                await buyNowBtn.click();
+
+                console.log(`🟢 Buy Now clicked for seller: ${task.seller}`);
+            }
+
+        }
+
 
         // 1️⃣ Sold Out check
         await updateStatus('Checking stock availability');
@@ -110,11 +185,40 @@ export const executePurchase = async (page, task, updateStatus = async () => { }
             };
         }
 
+
+
         await updateStatus('Opening address form');
-        await openAddressFormSafely(page);
+        // await openAddressFormSafely(page, task.name);
+        await page.waitForTimeout(5000);
+
+        const addNewBtn = page.getByText(/add a new address/i);
+        if (await addNewBtn.count() > 0 && await addNewBtn.first().isVisible()) {
+            console.log("🟢 Clicking Add New Address");
+            await addNewBtn.first().click();
+            await page.waitForSelector('input[name="name"]', {
+                state: "visible",
+                timeout: 15000
+            })
+        } else {
+            // CASE 3: Existing address selected → Change
+            const deliveryBlock = page.locator('div', {
+                hasText: 'Delivery Address',
+            });
+
+
+            if (await deliveryBlock.count() > 0) {
+                const changeBtns = deliveryBlock.getByRole('button', { name: /^change$/i }).nth(1);
+
+                await changeBtns.waitFor({ state: 'visible', timeout: 5000 });
+                await changeBtns.click();
+                await addNewBtn.waitFor({ state: 'visible', timeout: 5000 });
+                await addNewBtn.click();
+            }
+
+        }
 
         await updateStatus('Filling address details');
-        await page.locator('input[name="name"]').fill(task.name);
+        await page.waitForTimeout(5000);
         await page.locator('input[name="phone"]').fill(task.phone);
         await page.locator('input[name="pincode"]').fill(task.pincode);
         await page.locator('input[name="addressLine2"]').fill(task.addressline2);
@@ -127,9 +231,15 @@ export const executePurchase = async (page, task, updateStatus = async () => { }
         await page
             .locator('input[name="alternatePhone"]')
             .fill(task.alternatephone);
+
         await page.getByText("Home (All day delivery)").click();
 
+        await page.waitForTimeout(2000);
+        const nameField = page.locator('input[name="name"]')
+        await nameField.click();
         await page.waitForTimeout(1000);
+        await nameField.type(task.name, { delay: 100 });
+        await page.waitForTimeout(5000);
         await updateStatus('Saving address');
         await page
             .getByRole("button", { name: /Save and Deliver Here/i })
@@ -139,7 +249,7 @@ export const executePurchase = async (page, task, updateStatus = async () => { }
         await updateStatus('Continuing to payment');
         await page.getByRole("button", { name: /CONTINUE/i }).click();
         await page.waitForLoadState("networkidle");
-
+        await page.waitForTimeout(5000);
         // 🔄 Accept terms (if shown)
         const acceptBtn = page.getByRole("button", { name: /accept & continue/i });
         if (await acceptBtn.count() > 0 && await acceptBtn.first().isVisible()) {
@@ -147,7 +257,7 @@ export const executePurchase = async (page, task, updateStatus = async () => { }
             await acceptBtn.first().click();
             await page.waitForLoadState("networkidle");
         }
-
+        await page.waitForTimeout(5000);
         // 💰 COD CHECK STARTS HERE
         await updateStatus('Checking COD availability');
         const codOption = await page.getByText(/Cash on Delivery/i);
@@ -167,7 +277,7 @@ export const executePurchase = async (page, task, updateStatus = async () => { }
             console.log("❌ COD not available message");
             return { success: false, reason: "COD Not Available" };
         }
-
+        await page.waitForTimeout(3000);
         // ✅ COD available → select it
         await updateStatus('Selecting COD');
         await codOption.first().click();
@@ -184,14 +294,16 @@ export const executePurchase = async (page, task, updateStatus = async () => { }
         await orderConfirm.click();
         await page.waitForLoadState("networkidle");
         console.log("✅ Order placed successfully");
-
+        await page.waitForTimeout(3000);
         // Optional popup handling
         const denyBtn = page.getByRole("button", { name: /Deny/i });
+
         if (await denyBtn.count() > 0 && await denyBtn.first().isVisible()) {
             await updateStatus('Handling popups');
             await denyBtn.first().click();
         }
 
+        await page.waitForTimeout(3000);
         // 📸 TAKE SCREENSHOT
         await updateStatus('Capturing success screenshot');
         const screenshotPath = `screenshots/${task._id}-order-success.png`;

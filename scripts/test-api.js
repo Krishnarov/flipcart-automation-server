@@ -2,9 +2,11 @@ import axios from 'axios';
 import FormData from 'form-data';
 import fs from 'fs';
 import path from 'path';
-
+import dotenv from 'dotenv';
+dotenv.config();
 const BASE_URL = process.env.BASE_URL;
 let authToken = '';
+console.log(BASE_URL);
 
 const testAPI = async () => {
     console.log('🚀 Starting API Tests...\n');

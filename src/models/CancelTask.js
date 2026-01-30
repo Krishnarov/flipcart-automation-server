@@ -20,6 +20,9 @@ const cancelTaskSchema = new mongoose.Schema({
     reasontext: {
         type: String,
     },
+    seller: {
+        type: String,
+    },
     status: {
         type: String,
         enum: ['pending', 'success', 'failed'],

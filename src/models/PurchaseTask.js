@@ -17,6 +17,9 @@ const purchaseTaskSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    seller: {
+        type: String,
+    },
     name: {
         type: String,
     },

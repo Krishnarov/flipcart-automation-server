@@ -10,13 +10,11 @@ export const loginToEmail = async (page, email) => {
         await page.goto("https://m.kuku.lu/recv.php", {
             waitUntil: "domcontentloaded",
         });
-
+        await page.waitForTimeout(3000);
+        await page.locator('input[name="q"]').fill(email)
+        await page.press('input[name="q"]', 'Enter')
         await page.click("#image_reload");
         await page.waitForTimeout(10000);
-        await page.locator('input[name="q"]').fill(email)
-        await page.waitForTimeout(10000);
-        await page.press('input[name="q"]', 'Enter')
-        await page.waitForLoadState("networkidle")
         await page.click("#image_reload");
         await page.waitForTimeout(3000);
         await page.click("#image_reload");

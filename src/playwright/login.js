@@ -24,6 +24,7 @@ export const openFlipkartPage = async (page) => {
 export const loginToFlipkart = async (page, username) => {
     try {
         await page.goto('https://www.flipkart.com/account/login', { waitUntil: 'networkidle' });
+        await page.waitForTimeout(2000);
 
         await page.waitForSelector("input.c3Bd2c.yXUQVt", { timeout: 2000 });
         await page.fill("input.c3Bd2c.yXUQVt", username);
