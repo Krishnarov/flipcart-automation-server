@@ -13,8 +13,8 @@ import { delay } from '../playwright/utils.js';
  * Runs the automation flow for all tasks in a job.
  * @param {string} jobId - The ID of the AutomationJob.
  */
-export const runAutomation = async (jobId) => {
-    console.log("🟢 runAutomation started for job:", jobId);
+export const runAutomation = async (jobId, specificTaskId = null) => {
+    console.log("🟢 runAutomation started for job:", jobId, "specificTaskId:", specificTaskId);
     try {
 
 
@@ -28,12 +28,14 @@ export const runAutomation = async (jobId) => {
         let TaskModel;
         let executeFlow;
 
+        const query = specificTaskId ? { _id: specificTaskId } : { jobId, status: { $ne: 'success' } };
+
         if (job.type === 'cancel') {
-            tasks = await CancelTask.find({ jobId });
+            tasks = await CancelTask.find(query);
             TaskModel = CancelTask;
             executeFlow = executeCancellation;
         } else {
-            tasks = await PurchaseTask.find({ jobId });
+            tasks = await PurchaseTask.find(query);
             TaskModel = PurchaseTask;
             executeFlow = executePurchase;
         }
@@ -41,6 +43,7 @@ export const runAutomation = async (jobId) => {
         console.log(`🟢 Tasks found (${job.type}):`, tasks.length);
 
         for (const task of tasks) {
+            await delay(5000);
             const contextKuku = await chromium.launchPersistentContext(
                 "./kuku-session",
                 playwrightConfig
