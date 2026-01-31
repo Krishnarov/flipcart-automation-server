@@ -7,7 +7,8 @@
     "scripts": {
         "start": "node src/server.js",
         "dev": "nodemon src/server.js",
-        "test": "node scripts/test-api.js"
+        "test": "node scripts/test-api.js",
+        "postinstall": "npx playwright install --with-deps"
     },
     "dependencies": {
         "axios": "^1.6.0",
